@@ -11,14 +11,8 @@ async function getFilePaths(dir) {
             ? getFilePaths(direntPath)
             : Promise.resolve(direntPath));
     }
-    return (await Promise.all(promises)).flat();
-    // const paths: (string | string[])[] = await Promise.all(
-    //   dirents.map((dirent) => {
-    //     const res = path.resolve(dir, dirent.name);
-    //     return dirent.isDirectory() ? getFilePaths(res) : res;
-    //   })
-    // );
-    // return paths.flat();
+    const filePaths = await Promise.all(promises);
+    return filePaths.flat();
 }
 async function generateFileHash(fileName) {
     const buf = await fs.readFile(fileName);
@@ -57,7 +51,8 @@ async function replacePlaceholders(rootDir, outDir, paths, hashedFiles) {
                 });
                 const replaced = txt.replace(/({{)([^{}]+)(}})/g, (_, __, oldRelativePath) => {
                     const oldPath = path.resolve(path.dirname(paths[i]), oldRelativePath);
-                    return replacer(rootDir, oldPath, hashedFiles);
+                    const newPath = hashedFiles[oldPath];
+                    return path.relative(rootDir, newPath);
                 });
                 const outRelativePath = path.relative(rootDir, hashedFiles[paths[i]]);
                 const outPath = path.resolve(outDir, outRelativePath);
@@ -70,13 +65,9 @@ async function replacePlaceholders(rootDir, outDir, paths, hashedFiles) {
     }
     await Promise.all(promises);
 }
-function replacer(rootDir, oldPath, hashed) {
-    const newPath = hashed[oldPath];
-    return path.relative(rootDir, newPath);
-}
 async function main(rootDir, outDir) {
-    const projectFiles = await getFilePaths(rootDir);
-    const hashedFiles = await hashFileNames(projectFiles);
-    await replacePlaceholders(rootDir, outDir, projectFiles, hashedFiles);
+    const filePaths = await getFilePaths(rootDir);
+    const hashedFiles = await hashFileNames(filePaths);
+    await replacePlaceholders(rootDir, outDir, filePaths, hashedFiles);
 }
 await main("/home/wrigh/Documents/onion/src", "/home/wrigh/Documents/onion/dist");

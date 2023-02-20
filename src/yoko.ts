@@ -14,17 +14,11 @@ async function getFilePaths(dir: string): Promise<string[]> {
         : Promise.resolve(direntPath)
     );
   }
-  return (await Promise.all(promises)).flat();
-  // const paths: (string | string[])[] = await Promise.all(
-  //   dirents.map((dirent) => {
-  //     const res = path.resolve(dir, dirent.name);
-  //     return dirent.isDirectory() ? getFilePaths(res) : res;
-  //   })
-  // );
-  // return paths.flat();
+  const filePaths = await Promise.all(promises);
+  return filePaths.flat();
 }
 
-async function generateFileHash(fileName: string) {
+async function generateFileHash(fileName: string): Promise<string> {
   const buf = await fs.readFile(fileName);
   const hash = createHash("sha256").update(buf).digest("base64url");
   const newPath = fileName.replace(/\.[^(html)]+$/, (ext: string) => {
@@ -33,7 +27,9 @@ async function generateFileHash(fileName: string) {
   return newPath;
 }
 
-async function hashFileNames(paths: string[]) {
+async function hashFileNames(paths: string[]): Promise<{
+  [oldPath: string]: string;
+}> {
   const oldPaths: string[] = [];
   const promises: Promise<string>[] = [];
   for (let i = 0; i < paths.length; i++) {
@@ -57,7 +53,7 @@ async function replacePlaceholders(
   outDir: string,
   paths: string[],
   hashedFiles: { [oldPath: string]: string }
-) {
+): Promise<void> {
   const promises = [];
   for (let i = 0; i < paths.length; i++) {
     if (/\.(?:html|css|js)$/.test(paths[i]!)) {
@@ -73,7 +69,8 @@ async function replacePlaceholders(
                 path.dirname(paths[i]!),
                 oldRelativePath
               );
-              return replacer(rootDir, oldPath, hashedFiles);
+              const newPath = hashedFiles[oldPath]!;
+              return path.relative(rootDir, newPath);
             }
           );
           const outRelativePath = path.relative(
@@ -92,19 +89,10 @@ async function replacePlaceholders(
   await Promise.all(promises);
 }
 
-function replacer(
-  rootDir: string,
-  oldPath: string,
-  hashed: { [oldPath: string]: string }
-) {
-  const newPath = hashed[oldPath]!;
-  return path.relative(rootDir, newPath);
-}
-
 async function main(rootDir: string, outDir: string) {
-  const projectFiles = await getFilePaths(rootDir);
-  const hashedFiles = await hashFileNames(projectFiles);
-  await replacePlaceholders(rootDir, outDir, projectFiles, hashedFiles);
+  const filePaths = await getFilePaths(rootDir);
+  const hashedFiles = await hashFileNames(filePaths);
+  await replacePlaceholders(rootDir, outDir, filePaths, hashedFiles);
 }
 
 await main(
