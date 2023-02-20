@@ -14,10 +14,10 @@ async function getFilePaths(dir) {
     const filePaths = await Promise.all(promises);
     return filePaths.flat();
 }
-async function generateFileHash(filePath) {
-    const buf = await fs.readFile(filePath);
+async function generateFileHash(fileName) {
+    const buf = await fs.readFile(fileName);
     const hash = createHash("sha256").update(buf).digest("base64url");
-    const newPath = filePath.replace(/\.[^(html)]+$/, (ext) => {
+    const newPath = fileName.replace(/\.[^(html.js)]+$/, (ext) => {
         return `.${hash}${ext}`;
     });
     return newPath;
@@ -27,7 +27,7 @@ async function hashFileNames(paths) {
     const promises = [];
     for (let i = 0; i < paths.length; i++) {
         oldPaths.push(paths[i]);
-        if (/\.html$/.test(paths[i])) {
+        if (/\.html.js$/.test(paths[i])) {
             promises.push(Promise.resolve(paths[i]));
         }
         else {
@@ -45,29 +45,22 @@ async function replacePlaceholders(rootDir, outDir, paths, hashedFiles) {
     const promises = [];
     for (let i = 0; i < paths.length; i++) {
         promises.push((async function () {
-            let outFile = await fs.readFile(paths[i]);
-            let outTxt = "";
-            if (/\.(?:html|css|js)$/.test(paths[i])) {
-                outTxt = outFile
-                    .toString("utf-8")
-                    .replace(/({{)([^{}]+)(}})/g, (_, __, oldRelativePath) => {
+            let outTxt = await fs.readFile(paths[i], {
+                encoding: "utf-8",
+            });
+            if (/(?:\.html.js|\.css|[^(.html)]\.js)$/.test(paths[i])) {
+                outTxt = outTxt.replace(/({{)([^{}]+)(}})/g, (_, __, oldRelativePath) => {
                     const oldPath = path.resolve(path.dirname(paths[i]), oldRelativePath);
                     const newPath = hashedFiles[oldPath];
-                    // to allow cdn hosted assets do ASSET_URL + path.relative(rootDir, newPath)
-                    // use a cmd arg flag for dev and prod builds, that either utilize cdn or relative paths
                     return path.relative(rootDir, newPath);
                 });
             }
             const outRelativePath = path.relative(rootDir, hashedFiles[paths[i]]);
             const outPath = path.resolve(outDir, outRelativePath);
             await fs.mkdir(path.dirname(outPath), { recursive: true });
-            if (outTxt) {
-                await fs.writeFile(outPath, outTxt, {
-                    encoding: "utf-8",
-                });
-                return;
-            }
-            await fs.writeFile(outPath, outFile);
+            await fs.writeFile(outPath, outTxt, {
+                encoding: "utf-8",
+            });
         })());
     }
     await Promise.all(promises);
@@ -78,7 +71,7 @@ async function main(rootDir, outDir) {
     await replacePlaceholders(rootDir, outDir, filePaths, hashedFiles);
 }
 const args = process.argv;
-if (args.length < 4) {
+if (args.length < 2) {
     throw new Error("Arguments rootDir and outDir have not be provided.");
 }
-await main(args[2], args[3]);
+await main(args[0], args[1]);
