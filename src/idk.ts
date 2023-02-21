@@ -69,8 +69,6 @@ async function replacePlaceholders(
                 oldRelativePath
               );
               const newPath = hashedFiles[oldPath]!;
-              // TODO: To allow cdn hosted assets do ASSET_URL + path.relative(rootDir, newPath)
-              // Use a command line argument for dev and prod builds to indicate whether to use relative or cdn path.
               return path.relative(rootDir, newPath);
             });
         }
