@@ -53,8 +53,8 @@ async function replacePlaceholders(rootDir, outDir, paths, hashedFiles) {
                     .replace(/({{)([^{}]+)(}})/g, (_, __, oldRelativePath) => {
                     const oldPath = path.resolve(path.dirname(paths[i]), oldRelativePath);
                     const newPath = hashedFiles[oldPath];
-                    // to allow cdn hosted assets do ASSET_URL + path.relative(rootDir, newPath)
-                    // use a cmd arg flag for dev and prod builds, that either utilize cdn or relative paths
+                    // TODO: To allow cdn hosted assets do ASSET_URL + path.relative(rootDir, newPath)
+                    // Use a command line argument for dev and prod builds to indicate whether to use relative or cdn path.
                     return path.relative(rootDir, newPath);
                 });
             }
