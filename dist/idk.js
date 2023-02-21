@@ -79,6 +79,6 @@ async function main(rootDir, outDir) {
 }
 const args = process.argv;
 if (args.length < 4) {
-    throw new Error("Arguments rootDir and outDir have not be provided.");
+    throw new Error("Arguments rootDir and outDir have not been provided.");
 }
 await main(args[2], args[3]);
