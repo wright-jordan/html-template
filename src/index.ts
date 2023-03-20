@@ -1,3 +1,4 @@
+// TODO: Use a map instead of a plain object.
 const lookup = {
   "&": "&amp;",
   '"': "&quot;",
