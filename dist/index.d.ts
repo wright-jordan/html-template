@@ -1,1 +1,1 @@
-export declare function html(strings: string[], ...args: string[]): string;
+export declare function html(strings: TemplateStringsArray, ...args: string[]): string;

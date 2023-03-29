@@ -1,20 +1,23 @@
-const lookup = {
-    "&": "&amp;",
-    '"': "&quot;",
-    "'": "&apos;",
-    "<": "&lt;",
-    ">": "&gt;",
-};
+const lookup = new Map([
+    ["&", "&amp;"],
+    ['"', "&quot;"],
+    ["'", "&apos;"],
+    ["<", "&lt;"],
+    [">", "&gt;"],
+]);
+function replacer(ch) {
+    return lookup.get(ch);
+}
 export function html(strings, ...args) {
-    let transformed = [];
-    strings.forEach((s, i) => {
+    let transformed = "";
+    for (let i = 0; i < strings.length; i++) {
         const arg = args[i];
-        if (!arg) {
-            transformed.push(s);
-            return;
+        if (arg) {
+            transformed += strings[i] + arg.replace(/[&"'<>]/g, replacer);
         }
-        transformed.push(s +
-            arg.replace(/[&"'<>]/g, (ch) => lookup[ch]));
-    });
-    return transformed.join("");
+        else {
+            transformed += strings[i];
+        }
+    }
+    return transformed;
 }
